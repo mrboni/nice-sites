@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Random Site Redirect</title>
+    <script>
+        function redirectToRandomSite() {
+            // List of external sites
+            var sites = [
+                "https://www.thisiscolossal.com/",
+                "https://www.makery.info/en/",
+                "https://reasonstobecheerful.world/",
+                "https://www.positive.news/"
+            ];
+
+            // Generate a random index
+            var randomIndex = Math.floor(Math.random() * sites.length);
+
+            // Redirect to the randomly selected site
+            window.location.href = sites[randomIndex];
+        }
+    </script>
+</head>
+<body onload="redirectToRandomSite()">
+</body>
+</html>
