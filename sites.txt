@@ -1,0 +1,9 @@
+# sites list  ─ one URL per line
+https://www.thisiscolossal.com/
+https://www.makery.info/en/
+https://reasonstobecheerful.world/
+https://www.positive.news/
+https://informationisbeautiful.net/
+https://openprocessing.org/discover/#/trending
+
+
