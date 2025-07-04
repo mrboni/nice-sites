@@ -1,3 +1,8 @@
+# Optional global settings for transition / delay
+start=#000000 
+end=#ffffff
+delay=1000   # milliseconds (0 = no pause/fade)
+
 # sites list  ─ one URL per line
 https://www.thisiscolossal.com/
 https://www.makery.info/en/
