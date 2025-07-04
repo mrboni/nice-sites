@@ -1,26 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Random Site Redirect</title>
-    <script>
-        function redirectToRandomSite() {
-            // List of external sites
-            var sites = [
-                "https://www.thisiscolossal.com/",
-                "https://www.makery.info/en/",
-                "https://reasonstobecheerful.world/",
-                "https://www.positive.news/"
-            ];
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Home</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: grid;
+      place-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    a {
+      text-decoration: underline;
+    }
+  </style>
+  <script>
+    /*
+     * Random‑homepage
+     * ————————————
+     * 1. Put the sites you want below.
+     * 2. Deploy this file anywhere that serves static HTML.
+     * 3. Set your browser home/new‑tab page to the published URL.
+     */
+    const sites = [
+      'https://news.ycombinator.com',
+      'https://lobste.rs',
+      'https://stackexchange.com',
+      'https://openprocessing.org',
+      'https://github.com/trending'
+    ];
 
-            // Generate a random index
-            var randomIndex = Math.floor(Math.random() * sites.length);
+    function go() {
+      const choice = sites[Math.floor(Math.random() * sites.length)];
+      // Show destination before leaving (useful when connections are slow)
+      const link = document.getElementById('chosen');
+      link.textContent = choice.replace(/^https?:\/\//, '');
+      link.href = choice;
 
-            // Redirect to the randomly selected site
-            window.location.href = sites[randomIndex];
-        }
-    </script>
+      // Jump after a brief pause
+      setTimeout(() => {
+        window.location.replace(choice);
+      }, 500);
+    }
+
+    window.addEventListener('DOMContentLoaded', go);
+  </script>
 </head>
-<body onload="redirectToRandomSite()">
+<body>
+  <p>Heading to <a id="chosen" href="#"></a>…</p>
+  <noscript>Please enable JavaScript to pick a random site.</noscript>
 </body>
 </html>
