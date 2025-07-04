@@ -12,25 +12,21 @@
   </style>
   <script>
     /**
-     * Random‑homepage v6 – global config
-     * ----------------------------------
-     * `sites.txt` format:
-     *   # lines starting with # are comments
-     *   start=#000000     ← global fade‑from colour (optional)
-     *   end=#ffffff       ← global fade‑to colour (optional)
-     *   delay=1000        ← fade duration in ms (optional)
-     *   https://example.com   ← one URL per line after any config lines
-     *   https://github.com
-     *   ...etc.
-     * Keys are case‑insensitive, blanks ignored. If a key is omitted the default
-     * defined below is used. Sites can be listed before or after the config; the
-     * first "=" decides if it’s a key=value or a URL.
+     * Random‑homepage v7 – robust config parsing
+     * ------------------------------------------
+     * sites.txt supports:
+     *   start=#000000   (fade‑from colour)
+     *   end=#ffffff     (fade‑to colour)
+     *   delay=1000      (ms, 0 = instant)
+     *   # comment lines
+     *   https://example.com  ← one URL per line
+     * Inline comments after values are allowed (anything after the first #).
      */
 
-    // === Built‑in defaults (only used if sites.txt omits them) ===
-    const DEFAULT_START_COLOR = '#000000';
-    const DEFAULT_END_COLOR   = '#ffffff';
-    const DEFAULT_DELAY_MS    = 1000;
+    // Built‑in defaults (used if sites.txt omits them)
+    const DEFAULT_START = '#000000';
+    const DEFAULT_END   = '#ffffff';
+    const DEFAULT_DELAY = 1000;
 
     const FALLBACK_SITES = [
       'https://www.thisiscolossal.com/',
@@ -41,37 +37,50 @@
       'https://openprocessing.org/discover/#/trending'
     ];
 
-    async function loadConfigAndSites() {
-      // defaults
-      let start = DEFAULT_START_COLOR;
-      let end   = DEFAULT_END_COLOR;
-      let delay = DEFAULT_DELAY_MS;
+    const CONFIG_KEYS = new Set(['start', 'end', 'delay']);
+
+    function stripInlineComment(str) {
+      const hash = str.indexOf('#');
+      return (hash === -1 ? str : str.slice(0, hash)).trim();
+    }
+
+    async function loadConfig() {
+      let start = DEFAULT_START;
+      let end   = DEFAULT_END;
+      let delay = DEFAULT_DELAY;
       const sites = [];
 
       try {
         const res = await fetch('sites.txt', { cache: 'no-store' });
-        if (!res.ok) throw new Error('Failed to fetch sites.txt');
-        const text = await res.text();
-        const lines = text.split(/\r?\n/);
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const lines = (await res.text()).split(/\r?\n/);
 
-        for (const raw of lines) {
-          const line = raw.trim();
-          if (!line || line.startsWith('#')) continue;
+        for (let raw of lines) {
+          raw = raw.trim();
+          if (!raw || raw.startsWith('#')) continue;
+
+          // Remove inline comment portion for parsing
+          const line = stripInlineComment(raw);
+
           const eq = line.indexOf('=');
-          if (eq > -1) { // key=value
+          if (eq > -1) {
             const key = line.slice(0, eq).trim().toLowerCase();
             const val = line.slice(eq + 1).trim();
-            switch (key) {
-              case 'start': start = val; break;
-              case 'end':   end = val;   break;
-              case 'delay': delay = parseInt(val, 10) || 0; break;
+            if (CONFIG_KEYS.has(key)) {
+              switch (key) {
+                case 'start': start = val; break;
+                case 'end':   end   = val; break;
+                case 'delay': delay = parseInt(val, 10) || 0; break;
+              }
+              continue; // processed as config
             }
-          } else {
-            sites.push(line);
           }
+          // If we reach here the line is considered a site URL
+          sites.push(line);
         }
       } catch (err) {
-        console.warn('[Random‑homepage] Using fallback list –', err);
+        console.warn('[Random‑homepage] Falling back –', err);
+        return { sites: FALLBACK_SITES, start, end, delay };
       }
 
       return {
@@ -82,25 +91,27 @@
       };
     }
 
-    async function go() {
-      const config = await loadConfigAndSites();
-      const url = config.sites[Math.floor(Math.random() * config.sites.length)];
+    async function init() {
+      const cfg = await loadConfig();
+      const url = cfg.sites[Math.floor(Math.random() * cfg.sites.length)];
 
-      // Apply starting colour immediately
-      document.body.style.backgroundColor = config.start;
+      // Prevent white flash
+      document.body.style.backgroundColor = cfg.start;
 
-      if (config.delay === 0) {
+      if (cfg.delay === 0) {
         window.location.replace(url);
-      } else {
-        document.body.animate(
-          [{ backgroundColor: config.start }, { backgroundColor: config.end }],
-          { duration: config.delay, fill: 'forwards' }
-        );
-        setTimeout(() => window.location.replace(url), config.delay);
+        return;
       }
+
+      // Fade using Web Animations API
+      document.body.animate(
+        [{ backgroundColor: cfg.start }, { backgroundColor: cfg.end }],
+        { duration: cfg.delay, fill: 'forwards' }
+      );
+      setTimeout(() => window.location.replace(url), cfg.delay);
     }
 
-    window.addEventListener('DOMContentLoaded', go);
+    window.addEventListener('DOMContentLoaded', init);
   </script>
 </head>
 <body>
