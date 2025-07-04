@@ -17,35 +17,51 @@
     }
   </style>
   <script>
-    /*
-     * Random‑homepage
-     * ————————————
-     * 1. Put the sites you want below.
-     * 2. Deploy this file anywhere that serves static HTML.
-     * 3. Set your browser home/new‑tab page to the published URL.
+    /**
+     * Random‑homepage v2
+     * ------------------
+     * Place a plain‑text file named `sites.txt` in the same folder.
+     * Each line = one URL (blank lines & lines starting with # are ignored).
+     * When the page loads we fetch that list, choose at random, then redirect.
+     * If the fetch fails we fall back to a hard‑coded list so the page still works offline.
      */
-    const sites = [
+
+    const FALLBACK = [
       'https://news.ycombinator.com',
       'https://lobste.rs',
-      'https://stackexchange.com',
-      'https://openprocessing.org',
-      'https://github.com/trending'
+      'https://stackexchange.com'
     ];
 
-    function go() {
+    async function pickRandomSite() {
+      let sites = [];
+      try {
+        const res = await fetch('sites.txt', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed to fetch sites.txt');
+        const text = await res.text();
+        sites = text
+          .split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(line => line && !line.startsWith('#'));
+      } catch (err) {
+        console.warn('[Random‑homepage] Using fallback list –', err);
+        sites = FALLBACK;
+      }
+
+      if (!sites.length) {
+        alert('No sites found in sites.txt and no fallback defined.');
+        return;
+      }
+
       const choice = sites[Math.floor(Math.random() * sites.length)];
-      // Show destination before leaving (useful when connections are slow)
       const link = document.getElementById('chosen');
       link.textContent = choice.replace(/^https?:\/\//, '');
       link.href = choice;
-
-      // Jump after a brief pause
       setTimeout(() => {
         window.location.replace(choice);
       }, 500);
     }
 
-    window.addEventListener('DOMContentLoaded', go);
+    window.addEventListener('DOMContentLoaded', pickRandomSite);
   </script>
 </head>
 <body>
