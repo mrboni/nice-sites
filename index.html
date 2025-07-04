@@ -18,14 +18,17 @@
   </style>
   <script>
     /**
-     * Random‑homepage v2
+     * Random‑homepage v3
      * ------------------
-     * Place a plain‑text file named `sites.txt` in the same folder.
-     * Each line = one URL (blank lines & lines starting with # are ignored).
-     * When the page loads we fetch that list, choose at random, then redirect.
-     * If the fetch fails we fall back to a hard‑coded list so the page still works offline.
+     * 1. Place a plain‑text file named `sites.txt` in the same folder.
+     *    Each line = one URL (blank lines & lines starting with # are ignored).
+     * 2. Edit REDIRECT_DELAY_MS below if you want a visible pause.
      */
 
+    // Edit this value: milliseconds before redirecting (0 = instant)
+    const REDIRECT_DELAY_MS = 0;
+
+    // Fallback list used if sites.txt is missing or unreachable.
     const FALLBACK = [
       'https://www.thisiscolossal.com/',
       'https://www.makery.info/en/',
@@ -59,9 +62,12 @@
       const link = document.getElementById('chosen');
       link.textContent = choice.replace(/^https?:\/\//, '');
       link.href = choice;
-      setTimeout(() => {
+
+      if (REDIRECT_DELAY_MS === 0) {
         window.location.replace(choice);
-      }, 500);
+      } else {
+        setTimeout(() => window.location.replace(choice), REDIRECT_DELAY_MS);
+      }
     }
 
     window.addEventListener('DOMContentLoaded', pickRandomSite);
