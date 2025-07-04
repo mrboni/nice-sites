@@ -5,31 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Random Home</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      display: grid;
-      place-items: center;
-      height: 100vh;
+    html, body {
+      height: 100%;
       margin: 0;
-    }
-    a {
-      text-decoration: underline;
     }
   </style>
   <script>
     /**
-     * Random‑homepage v3
-     * ------------------
-     * 1. Place a plain‑text file named `sites.txt` in the same folder.
-     *    Each line = one URL (blank lines & lines starting with # are ignored).
-     * 2. Edit REDIRECT_DELAY_MS below if you want a visible pause.
+     * Random‑homepage v6 – global config
+     * ----------------------------------
+     * `sites.txt` format:
+     *   # lines starting with # are comments
+     *   start=#000000     ← global fade‑from colour (optional)
+     *   end=#ffffff       ← global fade‑to colour (optional)
+     *   delay=1000        ← fade duration in ms (optional)
+     *   https://example.com   ← one URL per line after any config lines
+     *   https://github.com
+     *   ...etc.
+     * Keys are case‑insensitive, blanks ignored. If a key is omitted the default
+     * defined below is used. Sites can be listed before or after the config; the
+     * first "=" decides if it’s a key=value or a URL.
      */
 
-    // Edit this value: milliseconds before redirecting (0 = instant)
-    const REDIRECT_DELAY_MS = 0;
+    // === Built‑in defaults (only used if sites.txt omits them) ===
+    const DEFAULT_START_COLOR = '#000000';
+    const DEFAULT_END_COLOR   = '#ffffff';
+    const DEFAULT_DELAY_MS    = 1000;
 
-    // Fallback list used if sites.txt is missing or unreachable.
-    const FALLBACK = [
+    const FALLBACK_SITES = [
       'https://www.thisiscolossal.com/',
       'https://www.makery.info/en/',
       'https://reasonstobecheerful.world/',
@@ -38,43 +41,69 @@
       'https://openprocessing.org/discover/#/trending'
     ];
 
-    async function pickRandomSite() {
-      let sites = [];
+    async function loadConfigAndSites() {
+      // defaults
+      let start = DEFAULT_START_COLOR;
+      let end   = DEFAULT_END_COLOR;
+      let delay = DEFAULT_DELAY_MS;
+      const sites = [];
+
       try {
         const res = await fetch('sites.txt', { cache: 'no-store' });
         if (!res.ok) throw new Error('Failed to fetch sites.txt');
         const text = await res.text();
-        sites = text
-          .split(/\r?\n/)
-          .map(line => line.trim())
-          .filter(line => line && !line.startsWith('#'));
+        const lines = text.split(/\r?\n/);
+
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line || line.startsWith('#')) continue;
+          const eq = line.indexOf('=');
+          if (eq > -1) { // key=value
+            const key = line.slice(0, eq).trim().toLowerCase();
+            const val = line.slice(eq + 1).trim();
+            switch (key) {
+              case 'start': start = val; break;
+              case 'end':   end = val;   break;
+              case 'delay': delay = parseInt(val, 10) || 0; break;
+            }
+          } else {
+            sites.push(line);
+          }
+        }
       } catch (err) {
         console.warn('[Random‑homepage] Using fallback list –', err);
-        sites = FALLBACK;
       }
 
-      if (!sites.length) {
-        alert('No sites found in sites.txt and no fallback defined.');
-        return;
-      }
+      return {
+        sites: sites.length ? sites : FALLBACK_SITES,
+        start,
+        end,
+        delay
+      };
+    }
 
-      const choice = sites[Math.floor(Math.random() * sites.length)];
-      const link = document.getElementById('chosen');
-      link.textContent = choice.replace(/^https?:\/\//, '');
-      link.href = choice;
+    async function go() {
+      const config = await loadConfigAndSites();
+      const url = config.sites[Math.floor(Math.random() * config.sites.length)];
 
-      if (REDIRECT_DELAY_MS === 0) {
-        window.location.replace(choice);
+      // Apply starting colour immediately
+      document.body.style.backgroundColor = config.start;
+
+      if (config.delay === 0) {
+        window.location.replace(url);
       } else {
-        setTimeout(() => window.location.replace(choice), REDIRECT_DELAY_MS);
+        document.body.animate(
+          [{ backgroundColor: config.start }, { backgroundColor: config.end }],
+          { duration: config.delay, fill: 'forwards' }
+        );
+        setTimeout(() => window.location.replace(url), config.delay);
       }
     }
 
-    window.addEventListener('DOMContentLoaded', pickRandomSite);
+    window.addEventListener('DOMContentLoaded', go);
   </script>
 </head>
 <body>
-  <p>Heading to <a id="chosen" href="#"></a>…</p>
   <noscript>Please enable JavaScript to pick a random site.</noscript>
 </body>
 </html>
